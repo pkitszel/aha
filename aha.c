@@ -79,6 +79,15 @@ typedef struct selem {
 	long int value;
 	pelem next;
 } telem;
+void deleteParse(pelem elem)
+{
+	while (elem!=NULL)
+	{
+		pelem temp=elem->next;
+		free(elem);
+		elem=temp;
+	}
+}
 
 pelem parseInsert(char* s)
 {
@@ -138,15 +147,7 @@ pelem parseInsert(char* s)
 	return firstelem;
 }
 
-void deleteParse(pelem elem)
-{
-	while (elem!=NULL)
-	{
-		pelem temp=elem->next;
-		free(elem);
-		elem=temp;
-	}
-}
+
 
 void printHtml(char *text) {
 	while(1) {
@@ -184,6 +185,7 @@ struct Options {
 	int word_wrap;
 	int no_xml;
 	char* lang;
+	int zoom;
 };
 
 int divide (int dividend, int divisor){
@@ -246,7 +248,8 @@ struct Options parseArgs(int argc, char* args[])
 		.title = NULL,
 		.word_wrap = 0,
 		.no_xml = 0,
-		.lang = NULL
+		.lang = NULL,
+		.zoom = 100,
 	};
 
 	//Searching Parameters
@@ -276,6 +279,7 @@ struct Options parseArgs(int argc, char* args[])
 			printf("                           useful for inclusion in full HTML files.\n");
 			printf("         --no-xml,     -x: Don't use doctype xml but html (may useful for old \n");
 			printf("                           browsers like IE)\n");
+			printf("         --zoom Z,     -z  Use zoom Z%%, Z must be int\n");
 			printf("Example: \033[1maha\033[0m --help | \033[1maha\033[0m --black > aha-help.htm\n");
 			printf("         Writes this help text to the file aha-help.htm\n\n");
 			printf("Copyleft \033[1;32mAlexander Matthes\033[0m aka \033[4mZiz\033[0m "AHA_YEAR"\n");
@@ -299,6 +303,17 @@ struct Options parseArgs(int argc, char* args[])
 				exit(EXIT_FAILURE);
 			}
 			opts.title=args[p+1];
+			p++;
+		}
+		else
+		if ((strcmp(args[p],"--zoom")==0) || (strcmp(args[p],"-z")==0))
+		{
+			if (p+1>=argc)
+			{
+				fprintf(stderr,"No zoom given!\n");
+				exit(EXIT_FAILURE);
+			}
+			opts.zoom=atoi(args[p+1]);
 			p++;
 		}
 		else
@@ -610,6 +625,7 @@ int main(int argc,char* args[])
 
 	if (!opts.no_header)
 		printHeader(&opts);
+	printf("<pre style=\"font-size: %d%%\">\n", opts.zoom);
 
 	//Begin of Conversion
 	struct State state = default_state;
@@ -1074,8 +1090,18 @@ int main(int argc,char* args[])
 			{
 				case '&':	printf("&amp;"); break;
 				case '\"':	printf("&quot;"); break;
-				case '<':	printf("&lt;"); break;
+				case '<':	printf("<span>&lt;</span>"); break;
 				case '>':	printf("&gt;"); break;
+				case '_':	printf("&lowbar;"); break;
+				case '-':	printf("&minus;"); break;
+				case '*':	printf("&ast;"); break;
+				//~ case '*':	printf("\\&ast;"); break;
+				case '\t':	printf("&Tab;"); break;
+				//~ case ' ':	printf("&nbsp;"); break;
+				case '[':	printf("<span>&lsqb;</span>"); break;
+				//~ case ']':	printf("\\&rbrack;"); break;
+				//~ case '[':	printf("&lbrack;"); break;
+				case ']':	printf("&rbrack;"); break;
 				case '\n':case 13:
 					momline++;
 					line=0;
@@ -1106,6 +1132,7 @@ int main(int argc,char* args[])
 		printf("</span>");
 
 	//Footer
+	printf("</pre>\n");
 	if (opts.no_header == 0)
 	{
 		printf("</pre>\n");
